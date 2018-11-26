@@ -3,62 +3,9 @@ import logging
 import random
 from enum import Enum
 
-class Game:
-
-	def __init__(self):		
-		self.currentPlayer = 1
-
-        self.gameState = GameState()
-
-		self.actionSpace = np.array([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], dtype=np.int)
-		self.pieces = {'1':'X', '0': '-', '-1':'O'}
-		self.grid_shape = (6,7)
-		self.input_shape = (2,6,7)
-		self.name = 'connect4'
-		self.state_size = len(self.gameState.binary)
-		self.action_size = len(self.actionSpace)
-
-	def reset(self):
-		self.gameState = GameState(np.array([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], dtype=np.int), 1)
-		self.currentPlayer = 1
-		return self.gameState
-
-	def step(self, action):
-		next_state, value, done = self.gameState.takeAction(action)
-		self.gameState = next_state
-		self.currentPlayer = -self.currentPlayer
-		info = None
-		return ((next_state, value, done, info))
-
-	def identities(self, state, actionValues):
-		identities = [(state,actionValues)]
-
-		currentBoard = state.board
-		currentAV = actionValues
-
-		currentBoard = np.array([
-			  currentBoard[6], currentBoard[5],currentBoard[4], currentBoard[3], currentBoard[2], currentBoard[1], currentBoard[0]
-			, currentBoard[13], currentBoard[12],currentBoard[11], currentBoard[10], currentBoard[9], currentBoard[8], currentBoard[7]
-			, currentBoard[20], currentBoard[19],currentBoard[18], currentBoard[17], currentBoard[16], currentBoard[15], currentBoard[14]
-			, currentBoard[27], currentBoard[26],currentBoard[25], currentBoard[24], currentBoard[23], currentBoard[22], currentBoard[21]
-			, currentBoard[34], currentBoard[33],currentBoard[32], currentBoard[31], currentBoard[30], currentBoard[29], currentBoard[28]
-			, currentBoard[41], currentBoard[40],currentBoard[39], currentBoard[38], currentBoard[37], currentBoard[36], currentBoard[35]
-			])
-
-		currentAV = np.array([
-			currentAV[6], currentAV[5],currentAV[4], currentAV[3], currentAV[2], currentAV[1], currentAV[0]
-			, currentAV[13], currentAV[12],currentAV[11], currentAV[10], currentAV[9], currentAV[8], currentAV[7]
-			, currentAV[20], currentAV[19],currentAV[18], currentAV[17], currentAV[16], currentAV[15], currentAV[14]
-			, currentAV[27], currentAV[26],currentAV[25], currentAV[24], currentAV[23], currentAV[22], currentAV[21]
-			, currentAV[34], currentAV[33],currentAV[32], currentAV[31], currentAV[30], currentAV[29], currentAV[28]
-			, currentAV[41], currentAV[40],currentAV[39], currentAV[38], currentAV[37], currentAV[36], currentAV[35]
-					])
-
-		identities.append((GameState(currentBoard, state.playerTurn), currentAV))
-
-		return identities
-
 # Mapping from Card Type to position (index) in the Agent's state
+
+
 class Cards(Enum):
     DEFUSE = 0
     ATTACK = 1
@@ -72,19 +19,19 @@ class Cards(Enum):
     CAT5 = 9
     EXPLODING_KITTEN = 15
 
-class GameState():
-	def __init__(self, playerTurn):
-        (self.deck, self.hand1, self.hand2) = _init()
-        self.discard = []
-		self.playerTurn = playerTurn
-		self.binary = self._binary()
-		self.id = self._convertStateToId()
-		self.allowedActions = self._allowedActions()
-		self.isEndGame = self._checkForEndGame()
-		self.value = self._getValue()
-		self.score = self._getScore()
 
-    def self.deck = _init():
+class Game:
+
+	def __init__(self):
+		self.currentPlayer = 1
+        self.gameState = self._initGameState()
+        self.actionSpace = np.array(
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=np.int)
+        self.name = 'exploding_kittens'
+        self.state_size = len(self.gameState.binary)
+        self.action_size = len(self.actionSpace)
+
+    def _initGameState(self):
         # Put all card in deck except E.K. and 2 defuse
         deck = [Cards.DEFUSE, Cards.DEFUSE,
                 Cards.ATTACK, Cards.ATTACK, Cards.ATTACK, Cards.ATTACK,
@@ -100,7 +47,7 @@ class GameState():
         # Shuffle deck
         random.shuffle(deck)
 
-            # Deal hands (including 1 defuse)
+        # Deal hands (including 1 defuse)
         handSize = 4
 
         hand1 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -119,85 +66,198 @@ class GameState():
         position = random.randint(0, len(deck))
         deck.insert(position, Cards.EXPLODING_KITTEN)
 
-        return (deck, hand1, hand2)
+        return GameState(deck, hand1, hand2, [], None, self.currentPlayer)
 
+	def reset(self):
+        self.currentPlayer = 1
+		self.gameState = self._initGameState()
+		return self.gameState
+
+	def step(self, action):
+		next_state, value, done, next_player = self.gameState.takeAction(action)
+		self.gameState = next_state
+		self.currentPlayer = next_player
+		info = None
+		return ((next_state, value, done, info))
+
+	# def identities(self, state, actionValues):
+	# 	identities = [(state,actionValues)]
+
+	# 	currentBoard = state.board
+	# 	currentAV = actionValues
+
+	# 	currentBoard = np.array([
+	# 		  currentBoard[6], currentBoard[5],currentBoard[4], currentBoard[3], currentBoard[2], currentBoard[1], currentBoard[0]
+	# 		, currentBoard[13], currentBoard[12],currentBoard[11], currentBoard[10], currentBoard[9], currentBoard[8], currentBoard[7]
+	# 		, currentBoard[20], currentBoard[19],currentBoard[18], currentBoard[17], currentBoard[16], currentBoard[15], currentBoard[14]
+	# 		, currentBoard[27], currentBoard[26],currentBoard[25], currentBoard[24], currentBoard[23], currentBoard[22], currentBoard[21]
+	# 		, currentBoard[34], currentBoard[33],currentBoard[32], currentBoard[31], currentBoard[30], currentBoard[29], currentBoard[28]
+	# 		, currentBoard[41], currentBoard[40],currentBoard[39], currentBoard[38], currentBoard[37], currentBoard[36], currentBoard[35]
+	# 		])
+
+	# 	currentAV = np.array([
+	# 		currentAV[6], currentAV[5],currentAV[4], currentAV[3], currentAV[2], currentAV[1], currentAV[0]
+	# 		, currentAV[13], currentAV[12],currentAV[11], currentAV[10], currentAV[9], currentAV[8], currentAV[7]
+	# 		, currentAV[20], currentAV[19],currentAV[18], currentAV[17], currentAV[16], currentAV[15], currentAV[14]
+	# 		, currentAV[27], currentAV[26],currentAV[25], currentAV[24], currentAV[23], currentAV[22], currentAV[21]
+	# 		, currentAV[34], currentAV[33],currentAV[32], currentAV[31], currentAV[30], currentAV[29], currentAV[28]
+	# 		, currentAV[41], currentAV[40],currentAV[39], currentAV[38], currentAV[37], currentAV[36], currentAV[35]
+	# 				])
+
+	# 	identities.append((GameState(currentBoard, state.playerTurn), currentAV))
+
+	# 	return identities
+
+
+class GameState():
+	def __init__(self, deck, currentHand, opposingHand, discard, lastPlayedCard, currentPlayer):
+        self.deck = deck
+        self.currentHand = currentHand
+        self.opposingHand = opposingHand
+        self.discard = discard
+        self.numTypes = 10
+        self.lastPlayedCard = lastPlayedCard
+        self.currentPlayer = currentPlayer
+
+		self.playerTurn = playerTurn
+		self.binary = self._binary()
+		self.id = self._convertStateToId()
+		self.allowedActions = self._allowedActions()
+		self.isEndGame = None
+		self.value = self._getValue()
+		self.score = self._getScore()
+
+    
 	def _allowedActions(self):
-		allowed = []
-		for i in range(len(self.board)):
-			if i >= len(self.board) - 7:
-				if self.board[i]==0:
-					allowed.append(i)
-			else:
-				if self.board[i] == 0 and self.board[i+7] != 0:
-					allowed.append(i)
+        allowedActions = []
+        for cardType, numCards in enumerate(self.currentHand):
+            if cardType == 0:
+                continue
+            elif cardType >= 5 and numCards >= 2:
+                allowedActions.append(cardType)
+            elif self.lastPlayedCard == Cards.ATTACK and cardType == 1:
+                continue
+            elif numCards >= 1:
+                allowedActions.append(cardType)
 
-		return allowed
+        return allowedActions
 
 	def _binary(self):
 
-		currentplayer_position = np.zeros(len(self.board), dtype=np.int)
-		currentplayer_position[self.board==self.playerTurn] = 1
+        state = self.currentHand.append(self.lastPlayedCard.value).append(len(self.deck))
 
-		other_position = np.zeros(len(self.board), dtype=np.int)
-		other_position[self.board==-self.playerTurn] = 1
+		return (state)
 
-		position = np.append(currentplayer_position,other_position)
+	# def _convertStateToId(self):
+	# 	player1_position = np.zeros(len(self.board), dtype=np.int)
+	# 	player1_position[self.board==1] = 1
 
-		return (position)
+	# 	other_position = np.zeros(len(self.board), dtype=np.int)
+	# 	other_position[self.board==-1] = 1
 
-	def _convertStateToId(self):
-		player1_position = np.zeros(len(self.board), dtype=np.int)
-		player1_position[self.board==1] = 1
+	# 	position = np.append(player1_position,other_position)
 
-		other_position = np.zeros(len(self.board), dtype=np.int)
-		other_position[self.board==-1] = 1
+	# 	id = ''.join(map(str,position))
 
-		position = np.append(player1_position,other_position)
+	# 	return id
 
-		id = ''.join(map(str,position))
 
-		return id
+    def _endTurn(self)
+        if self.passed:
+            self.isEndGame = False
+            return
 
-	def _checkForEndGame(self):
-		if np.count_nonzero(self.board) == 42:
-			return 1
+        card = self.deck.pop()
+        if card == Cards.EXPLODING_KITTEN:
+            if self.currentHand[Cards.DEFUSE.value] != 0:
+                # Has a defuse
+                self.currentHand[Cards.DEFUSE.value] -= 1
 
-		for x,y,z,a in self.winners:
-			if (self.board[x] + self.board[y] + self.board[z] + self.board[a] == 4 * -self.playerTurn):
-				return 1
-		return 0
+                # Insert E.K. into deck randomly
+                position = random.randint(0, len(deck))
+                deck.insert(position, Cards.EXPLODING_KITTEN)            
+            else:
+                # EndGame
+                self.isEndGame = True
+            
+        else:
+            self.currentHand[card.value] += 1
+
+        self.isEndGame = False
 
 
 	def _getValue(self):
 		# This is the value of the state for the current player
 		# i.e. if the previous player played a winning move, you lose
-		for x,y,z,a in self.winners:
-			if (self.board[x] + self.board[y] + self.board[z] + self.board[a] == 4 * -self.playerTurn):
-				return (-1, -1, 1)
+		if self.isEndGame != None and self.isEndGame:
+			return (-1, -1, 1)
 		return (0, 0, 0)
 
 
 	def _getScore(self):
-		tmp = self.value
+		tmp = self._getValue()
 		return (tmp[1], tmp[2])
 
 
-
-
 	def takeAction(self, action):
-		newBoard = np.array(self.board)
-		newBoard[action]=self.playerTurn
-		
-		newState = GameState(newBoard, -self.playerTurn)
+		# Action is an integer 0-9
+        card = Cards(action)
+
+        # Take the card out of the hand
+        self.currentHand[action] -= 1
+        self.discard.push(card)   
+        
+        if card === Cards.ATTACK:
+            self.passed = True
+        else if card == Cards.SKIP:
+            self.passed = True
+        else if card == Cards.SHUFFLE:
+            random.shuffle(self.deck)
+        else if card == Cards.FAVOR or Cards.CAT1 or Cards.CAT2 \
+            or Cards.CAT3 or Cards.CAT4 or Cards.CAT5:
+            # Could make this better in the future by defining an order 
+            # in which to give up cards for favor
+
+            # Take 2 cards from hand if a cat card was played
+            if card != Cards.SHUFFLE:
+                self.currentHand[action] -= 1
+                self.discard.push(card)
+
+            validActions = []
+            for cardType, numCards in enumerate(self.opposingHand):
+                if numCards > 0:
+                    validActions.append(cardType)
+            
+            if not validActions:
+                action = random.randint(0, len(validActions))
+                card = validActions[action]
+
+                self.currentHand[card] += 1
+                self.opposingHand[card] -= 1
+
+        # Done taking actions, end turn by drawing a card and checking if the game ends
+        self._endTurn()
+
+        if self.lastPlayedCard == Cards.ATTACK:
+            # Set the next players turn equal to the current players turn
+            currentHand = self.curerntHand
+            opposingHand = self.opposingHand
+            self.currentPlayer = -self.currentPlayer
+        else:
+            currentHand = self.opposingHand
+            opposingHand = self.currentHand
+
+        nextPlayer = -self.currentPlayer
+        newstate = GameState(self.deck, currentHand, opposingHand, self.discard, card, nextPlayer)
 
 		value = 0
 		done = 0
-
-		if newState.isEndGame:
-			value = newState.value[0]
+        
+		if self.isEndGame != None and self.isEndGame == True:
+			value = -1
 			done = 1
 
-		return (newState, value, done) 
+		return (newState, value, done, nextPlayer) 
 
 
 
