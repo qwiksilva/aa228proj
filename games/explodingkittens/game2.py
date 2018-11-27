@@ -109,7 +109,6 @@ class GameState():
     # In the hand, slot 0 is for the defuse card, which ideally should never be played by the player
     # (in _endTurn(), a defuse is automatically played if needed), so we can instead use
     # action 0 to mean NULL; or we can keep action 10 to signify NULL action. Either way works.
-
     def _allowedActions(self):
         allowedActions = [10]
         for cardType, numCards in enumerate(self.currentHand):
@@ -171,13 +170,14 @@ class GameState():
         # I'm unsure if the allowedActions() function completely eliminates actions. If it does
         # then the self.currentHand[action]>0 case is covered, if not then we need to check
         # for it again here.
+
         card = Cards(action)
         # Take the card out of the hand
-        self.currentHand[action] -= 1
-        self.discard.append(card)
-        if card == Cards.NULL:
-            pass
-        elif card == Cards.ATTACK:
+        if card != Cards.NULL:
+            self.currentHand[action] -= 1
+            self.discard.append(card)
+
+        if card == Cards.ATTACK:
             self.noDrawThisTurn = True  # self.passed ensures that the next guy skips his turn ????
         elif card == Cards.SKIP:
             self.noDrawThisTurn = True  # self.passed ensures that the next guy skips his turn ????
@@ -188,8 +188,7 @@ class GameState():
             # Take 2 cards from hand if a cat card was played ????
             if card != Cards.FAVOR:
                 self.currentHand[action] -= 1
-                self.discard.push(card)
-        # Nothing happens if action == 10, i.e. the player doesn't play a card
+                self.discard.append(card)
 
             # Acts like FAVOUR
             self.currentHand[action]
