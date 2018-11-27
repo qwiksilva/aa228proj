@@ -200,6 +200,8 @@ class GameState():
         # Action is an integer 0-9
         card = Cards(action)
 
+        # Hey Ryan do you check whether self.currentHand[action]>0 when you take an action ????
+
         # Take the card out of the hand
         self.currentHand[action] -= 1
         self.discard.append(card)
@@ -210,17 +212,19 @@ class GameState():
             self.passed = True
         elif card == Cards.SHUFFLE:
             random.shuffle(self.deck)
-        elif card == Cards.FAVOR or Cards.CAT1 or Cards.CAT2 \
-                or Cards.CAT3 or Cards.CAT4 or Cards.CAT5:
+        elif (card == Cards.FAVOR) or (card == Cards.CAT1) or (card == Cards.CAT2)\
+                or (card == Cards.CAT3) or (card == Cards.CAT4) or (card == Cards.CAT5):
             # Could make this better in the future by defining an order
             # in which to give up cards for favor
 
             # Take 2 cards from hand if a cat card was played
             if card != Cards.FAVOR:
                 self.currentHand[action] -= 1
-                self.discard.append(card)
+                self.discard.push(card)
 
+            # FAVOUR-------------------------
             validActions = []
+            # ???? Is this favour card ????
             for cardType, numCards in enumerate(self.opposingHand):
                 if numCards > 0:
                     validActions.append(cardType)
