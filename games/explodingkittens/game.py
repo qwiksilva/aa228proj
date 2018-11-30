@@ -17,16 +17,16 @@ class Cards(Enum):
     CAT3 = 7
     CAT4 = 8
     CAT5 = 9
+    NULL = 10
     EXPLODING_KITTEN = 15
 
 
 class Game:
-
     def __init__(self):
         self.currentPlayer = 1
         self.gameState = self._initGameState()
         self.actionSpace = np.array(
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=np.int)
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=np.int)
         self.name = 'exploding_kittens'
         self.state_size = len(self.gameState.binary)
         self.action_size = len(self.actionSpace)
@@ -48,16 +48,16 @@ class Game:
         random.shuffle(deck)
 
         # Deal hands (including 1 defuse)
-        handSize = 4
+        HAND_SIZE = 4
 
         hand1 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        for _ in range(handSize):
+        for _ in range(HAND_SIZE):
             card = deck.pop()
             hand1[card.value] += 1
         hand1[Cards.DEFUSE.value] = 1
 
         hand2 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        for _ in range(handSize):
+        for _ in range(HAND_SIZE):
             card = deck.pop()
             hand2[card.value] += 1
         hand2[Cards.DEFUSE.value] = 1
@@ -65,7 +65,6 @@ class Game:
         # Insert E.K. into deck randomly
         position = random.randint(0, len(deck)-1)
         deck.insert(position, Cards.EXPLODING_KITTEN)
-
         return GameState(deck, hand1, hand2, [], None, self.currentPlayer)
 
     def reset(self):
@@ -74,8 +73,8 @@ class Game:
         return self.gameState
 
     def step(self, action):
-        next_state, value, done, next_player = self.gameState.takeAction(
-            action)
+        next_state, value, done, penalizeplayer, next_player = self.gameState.takeAction(
+            action)  # Added a penalize player to penalize the right player
         self.gameState = next_state
         self.currentPlayer = next_player
         info = None
@@ -83,72 +82,77 @@ class Game:
 
 
 class GameState():
-    def __init__(self, deck, currentHand, opposingHand, discard, lastPlayedCard, playerTurn):
+    def __init__(self, deck, currentHand, opposingHand, discard, lastPlayedCard, currentPlayer):
         self.deck = deck
         self.currentHand = currentHand
         self.opposingHand = opposingHand
         self.discard = discard
         self.numTypes = 10
         self.lastPlayedCard = lastPlayedCard
-        self.playerTurn = playerTurn
+        self.currentPlayer = currentPlayer
+        self.noDrawThisTurn = False
         self.binary = self._binary()
-        self.passed = False
-        # self.id = self._convertStateToId()
         self.allowedActions = self._allowedActions()
-        self.isEndGame = None
+        self.isEndGame = False
         self.value = self._getValue()
         self.score = self._getScore()
 
     def _allowedActions(self):
-        allowedActions = []
+        allowedActions = [10]
         for cardType, numCards in enumerate(self.currentHand):
             if cardType == 0:
+                # This action signifies playing a defuse card. Disallow for now, but we can potentially
+                # have the agent learn that they should never play this card to show that the agent
+                # is learning something
                 continue
-            elif cardType >= 5 and numCards >= 2:
-                allowedActions.append(cardType)
             elif self.lastPlayedCard == Cards.ATTACK and cardType == 1:
+                # To simplify, disallow playing an attack card the first turn after
+                # one has just been played
                 continue
-            elif numCards >= 1:
+            elif cardType < 5 and numCards >= 1:  # ????
                 allowedActions.append(cardType)
-
+            # Hey Ryan ???? What special condition happens when this is triggered redundant
+            elif cardType >= 5 and numCards >= 2:
+                # Game rules dictate there must be 2 of a kind to play a 'CAT' card
+                allowedActions.append(cardType)
         return allowedActions
 
+    # Binary binarizes the state observed according to the current player
     def _binary(self):
         lastPlayedValue = self.lastPlayedCard.value if self.lastPlayedCard != None else -1
         state = self.currentHand.copy()
         state.append(lastPlayedValue)
         state.append(len(self.deck))
-
         return (state)
 
-
+    # End the turn by drawing a card. Don't draw if noDrawThisTurn (i.e. an attack or skip was played)
+    # Returns whether the game ended due to an exploding kitten or not
     def _endTurn(self):
-        if self.passed:
-            self.isEndGame = False
-            return
-
+        if self.noDrawThisTurn:
+            return False
         card = self.deck.pop()
         if card == Cards.EXPLODING_KITTEN:
             if self.currentHand[Cards.DEFUSE.value] != 0:
                 # Has a defuse
                 self.currentHand[Cards.DEFUSE.value] -= 1
-
                 # Insert E.K. into deck randomly
-                position = random.randint(0, len(self.deck)-1)
-                self.deck.insert(position, Cards.EXPLODING_KITTEN)
+                if len(self.deck) == 0:
+                    self.deck.insert(0, Cards.EXPLODING_KITTEN)
+                else:
+                    position = random.randint(0, len(self.deck)-1)
+                    self.deck.insert(position, Cards.EXPLODING_KITTEN)
             else:
                 # EndGame
-                self.isEndGame = True
-
+                return True
         else:
             self.currentHand[card.value] += 1
 
-        self.isEndGame = False
+        return False
 
     def _getValue(self):
         # This is the value of the state for the current player
         # i.e. if the previous player played a winning move, you lose
-        if self.isEndGame != None and self.isEndGame:
+        if self.isEndGame:
             return (-1, -1, 1)
         return (0, 0, 0)
 
@@ -157,71 +161,70 @@ class GameState():
         return (tmp[1], tmp[2])
 
     def takeAction(self, action):
-        # Action is an integer 0-9
+        # I'm unsure if the allowedActions() function completely eliminates actions. If it does
+        # then the self.currentHand[action]>0 case is covered, if not then we need to check
+        # for it again here.
+
         card = Cards(action)
-
-        # Hey Ryan do you check whether self.currentHand[action]>0 when you take an action ????
-
         # Take the card out of the hand
-        self.currentHand[action] -= 1
-        self.discard.append(card)
+        if card != Cards.NULL:
+            self.currentHand[action] -= 1
+            self.discard.append(card)
 
         if card == Cards.ATTACK:
-            self.passed = True
+            self.noDrawThisTurn = True
         elif card == Cards.SKIP:
-            self.passed = True
+            self.noDrawThisTurn = True
         elif card == Cards.SHUFFLE:
             random.shuffle(self.deck)
-        elif (card == Cards.FAVOR) or (card == Cards.CAT1) or (card == Cards.CAT2)\
-                or (card == Cards.CAT3) or (card == Cards.CAT4) or (card == Cards.CAT5):
-            # Could make this better in the future by defining an order
-            # in which to give up cards for favor
+        elif (card == Cards.FAVOR) or (card == Cards.CAT1) or (card == Cards.CAT2)or (card == Cards.CAT3) or (card == Cards.CAT4) or (card == Cards.CAT5):
 
             # Take 2 cards from hand if a cat card was played
             if card != Cards.FAVOR:
                 self.currentHand[action] -= 1
-                self.discard.push(card)
+                self.discard.append(card)
 
-            # FAVOUR-------------------------
+            # Acts like FAVOUR
+            self.currentHand[action]
             validActions = []
-            # ???? Is this favour card ????
             for cardType, numCards in enumerate(self.opposingHand):
                 if numCards > 0:
                     validActions.append(cardType)
 
             if validActions:
                 action = random.randint(0, len(validActions)-1)
-                cardAction = validActions[action]
+                chosenCard = validActions[action]
 
-                self.currentHand[cardAction] += 1
-                self.opposingHand[cardAction] -= 1
+                self.currentHand[chosenCard] += 1
+                self.opposingHand[chosenCard] -= 1
 
         # Done taking actions, end turn by drawing a card and checking if the game ends
-        self._endTurn()
+        self.isEndGame = self._endTurn()
 
         if self.lastPlayedCard == Cards.ATTACK:
             # Set the next players turn equal to the current players turn
             currentHand = self.currentHand
             opposingHand = self.opposingHand
-            self.playerTurn = -self.playerTurn
+            nextPlayer = self.currentPlayer
         else:
             currentHand = self.opposingHand
             opposingHand = self.currentHand
+            nextPlayer = -self.currentPlayer
 
-        nextPlayer = -self.playerTurn
         newState = GameState(self.deck, currentHand,
                              opposingHand, self.discard, card, nextPlayer)
         value = 0
         done = 0
-
-        if self.isEndGame != None and self.isEndGame == True:
+        if self.isEndGame == True:
             value = -1
             done = 1
+        return (newState, value, done, self.currentPlayer, nextPlayer)
 
-        return (newState, value, done, nextPlayer)
 
-    def render(self, logger):
-        for r in range(6):
-            logger.info([self.pieces[str(x)]
-                         for x in self.board[7*r: (7*r + 7)]])
-        logger.info('--------------')
+'''
+
+	def render(self, logger):
+		for r in range(6):
+			logger.info([self.pieces[str(x)] for x in self.board[7*r : (7*r + 7)]])
+		logger.info('--------------')
+'''
