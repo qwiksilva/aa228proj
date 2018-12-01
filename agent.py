@@ -53,16 +53,16 @@ class Agent():
 		self.val_value_loss = []
 		self.val_policy_loss = []
 
-	
+
 	def simulate(self):
 
 		lg.logger_mcts.info('ROOT NODE...%s', self.mcts.root.state.id)
-		self.mcts.root.state.render(lg.logger_mcts)
+		#self.mcts.root.state.render(lg.logger_mcts)
 		lg.logger_mcts.info('CURRENT PLAYER...%d', self.mcts.root.state.playerTurn)
 
 		##### MOVE THE LEAF NODE
 		leaf, value, done, breadcrumbs = self.mcts.moveToLeaf()
-		leaf.state.render(lg.logger_mcts)
+		#leaf.state.render(lg.logger_mcts)
 
 		##### EVALUATE THE LEAF NODE
 		value, breadcrumbs = self.evaluateLeaf(leaf, value, done, breadcrumbs)
@@ -132,14 +132,14 @@ class Agent():
 		lg.logger_mcts.info('------EVALUATING LEAF------')
 
 		if done == 0:
-	
+
 			value, probs, allowedActions = self.get_preds(leaf.state)
 			lg.logger_mcts.info('PREDICTED VALUE FOR %d: %f', leaf.state.playerTurn, value)
 
 			probs = probs[allowedActions]
 
 			for idx, action in enumerate(allowedActions):
-				newState, _, _ = leaf.state.takeAction(action)
+				newState, _, _,_,_ = leaf.state.takeAction(action)
 				if newState.id not in self.mcts.tree:
 					node = mc.Node(newState)
 					self.mcts.addNode(node)
@@ -150,19 +150,19 @@ class Agent():
 
 				newEdge = mc.Edge(leaf, node, probs[idx], action)
 				leaf.edges.append((action, newEdge))
-				
+
 		else:
 			lg.logger_mcts.info('GAME VALUE FOR %d: %f', leaf.playerTurn, value)
 
 		return ((value, breadcrumbs))
 
 
-		
+
 	def getAV(self, tau):
 		edges = self.mcts.root.edges
 		pi = np.zeros(self.action_size, dtype=np.integer)
 		values = np.zeros(self.action_size, dtype=np.float32)
-		
+
 		for action, edge in edges:
 			pi[action] = pow(edge.stats['N'], 1/tau)
 			values[action] = edge.stats['Q']
@@ -191,14 +191,14 @@ class Agent():
 
 			training_states = np.array([self.model.convertToModelInput(row['state']) for row in minibatch])
 			training_targets = {'value_head': np.array([row['value'] for row in minibatch])
-								, 'policy_head': np.array([row['AV'] for row in minibatch])} 
+								, 'policy_head': np.array([row['AV'] for row in minibatch])}
 
 			fit = self.model.fit(training_states, training_targets, epochs=config.EPOCHS, verbose=1, validation_split=0, batch_size = 32)
 			lg.logger_mcts.info('NEW LOSS %s', fit.history)
 
 			self.train_overall_loss.append(round(fit.history['loss'][config.EPOCHS - 1],4))
-			self.train_value_loss.append(round(fit.history['value_head_loss'][config.EPOCHS - 1],4)) 
-			self.train_policy_loss.append(round(fit.history['policy_head_loss'][config.EPOCHS - 1],4)) 
+			self.train_value_loss.append(round(fit.history['value_head_loss'][config.EPOCHS - 1],4))
+			self.train_policy_loss.append(round(fit.history['policy_head_loss'][config.EPOCHS - 1],4))
 
 		plt.plot(self.train_overall_loss, 'k')
 		plt.plot(self.train_value_loss, 'k:')

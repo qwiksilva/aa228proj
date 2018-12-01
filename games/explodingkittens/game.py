@@ -23,13 +23,17 @@ class Cards(Enum):
 
 class Game:
     def __init__(self):
+        #We need grid_shape
         self.currentPlayer = 1
         self.gameState = self._initGameState()
         self.actionSpace = np.array(
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=np.int)
         self.name = 'exploding_kittens'
         self.state_size = len(self.gameState.binary)
+        self.name='exploding_kittens'
+        self.state_size = len(self.gameState.binary)
         self.action_size = len(self.actionSpace)
+        self.input_shape=[len(self.gameState.binary)]
 
     def _initGameState(self):
         # Put all card in deck except E.K. and 2 defuse
@@ -78,7 +82,7 @@ class Game:
         self.gameState = next_state
         self.currentPlayer = next_player
         info = None
-        return ((next_state, value, done, info))
+        return ((next_state, value, done, penalizeplayer)) #Sends out next_state, penalty, whether game is done and which player to penalize
 
 
 class GameState():
@@ -117,13 +121,13 @@ class GameState():
                 allowedActions.append(cardType)
         return allowedActions
 
-    # Binary binarizes the state observed according to the current player
+    #  binarizes the state observed according to the current player
     def _binary(self):
         lastPlayedValue = self.lastPlayedCard.value if self.lastPlayedCard != None else -1
         state = self.currentHand.copy()
         state.append(lastPlayedValue)
         state.append(len(self.deck))
-        return (state)
+        return np.array(state)
 
     # End the turn by drawing a card. Don't draw if noDrawThisTurn (i.e. an attack or skip was played)
     # Returns whether the game ended due to an exploding kitten or not
@@ -211,8 +215,10 @@ class GameState():
             opposingHand = self.currentHand
             nextPlayer = -self.currentPlayer
 
-        newState = GameState(self.deck, currentHand,
-                             opposingHand, self.discard, card, nextPlayer)
+        if self.currentPlayer==1:
+            newState = GameState(self.deck, currentHand,opposingHand, self.discard, card, nextPlayer)# The game states reverse every time
+        else:
+            newState = GameState(self.deck, opposingHand,currentHand, self.discard, card, nextPlayer)
         value = 0
         done = 0
         if self.isEndGame == True:

@@ -77,7 +77,7 @@ class Gen_Model():
 					filter = (filter + 1) % s[3]
 
 			except:
-	
+
 				try:
 					fig = plt.figure(figsize=(3, len(x)))  # width, height in inches
 					for i in range(len(x)):
@@ -87,7 +87,7 @@ class Gen_Model():
 						else:
 							clim = (0, 2)
 						sub.imshow([x[i]], cmap='coolwarm', clim=clim,aspect="auto")
-						
+
 					plt.show()
 
 				except:
@@ -95,17 +95,43 @@ class Gen_Model():
 						fig = plt.figure(figsize=(3, 3))  # width, height in inches
 						sub = fig.add_subplot(1, 1, 1)
 						sub.imshow(x[0], cmap='coolwarm', clim=(-1, 1),aspect="auto")
-						
+
 						plt.show()
 
 					except:
 						pass
 
 			plt.show()
-				
+
 		lg.logger_model.info('------------------')
 
+class Densely_connected_net(Gen_Model):
+	def __init__(self, reg_const, learning_rate, input_dim,  output_dim):
+		Gen_Model.__init__(self, reg_const, learning_rate, input_dim, output_dim)
+		self.model = self._build_model()
 
+	def _build_model(self):
+		main_input = Input(shape = self.input_dim, name = 'main_input')
+		x = Dense(20, activation='relu',kernel_regularizer=regularizers.l2(self.reg_const))(main_input)
+		x = Dense(8, activation='relu',kernel_regularizer=regularizers.l2(self.reg_const))(x)
+		vh = Dense(1, use_bias=False, activation='tanh', kernel_regularizer=regularizers.l2(self.reg_const), name = 'value_head')(x)
+		ph = Dense(self.output_dim, use_bias=False, activation='linear', kernel_regularizer=regularizers.l2(self.reg_const), name = 'policy_head')(x)
+		model = Model(inputs=[main_input], outputs=[vh, ph])
+		# Compile model
+		model.compile(loss={'value_head': 'mean_squared_error', 'policy_head': 'binary_crossentropy'},
+			optimizer=SGD(lr=self.learning_rate, momentum = config.MOMENTUM),
+			loss_weights={'value_head': 0.5, 'policy_head': 0.5}
+			)
+		return model
+		#model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+
+	def convertToModelInput(self, state):
+		inputToModel =  state._binary() #np.append(state.binary, [(state.playerTurn + 1)/2] * self.input_dim[1] * self.input_dim[2])
+		inputToModel = np.reshape(inputToModel, self.input_dim)
+		return (inputToModel)
+
+
+'''
 class Residual_CNN(Gen_Model):
 	def __init__(self, reg_const, learning_rate, input_dim,  output_dim, hidden_layers):
 		Gen_Model.__init__(self, reg_const, learning_rate, input_dim, output_dim)
@@ -233,13 +259,14 @@ class Residual_CNN(Gen_Model):
 
 		model = Model(inputs=[main_input], outputs=[vh, ph])
 		model.compile(loss={'value_head': 'mean_squared_error', 'policy_head': softmax_cross_entropy_with_logits},
-			optimizer=SGD(lr=self.learning_rate, momentum = config.MOMENTUM),	
-			loss_weights={'value_head': 0.5, 'policy_head': 0.5}	
+			optimizer=SGD(lr=self.learning_rate, momentum = config.MOMENTUM),
+			loss_weights={'value_head': 0.5, 'policy_head': 0.5}
 			)
 
 		return model
 
 	def convertToModelInput(self, state):
 		inputToModel =  state.binary #np.append(state.binary, [(state.playerTurn + 1)/2] * self.input_dim[1] * self.input_dim[2])
-		inputToModel = np.reshape(inputToModel, self.input_dim) 
+		inputToModel = np.reshape(inputToModel, self.input_dim)
 		return (inputToModel)
+'''

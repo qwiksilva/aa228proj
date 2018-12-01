@@ -34,7 +34,7 @@ class Edge():
 					'Q': 0,
 					'P': prior,
 				}
-				
+
 
 class MCTS():
 
@@ -43,7 +43,7 @@ class MCTS():
 		self.tree = {}
 		self.cpuct = cpuct
 		self.addNode(root)
-	
+
 	def __len__(self):
 		return len(self.tree)
 
@@ -60,7 +60,7 @@ class MCTS():
 		while not currentNode.isLeaf():
 
 			lg.logger_mcts.info('PLAYER TURN...%d', currentNode.state.playerTurn)
-		
+
 			maxQU = -99999
 
 			if currentNode == self.root:
@@ -79,7 +79,7 @@ class MCTS():
 				U = self.cpuct * \
 					((1-epsilon) * edge.stats['P'] + epsilon * nu[idx] )  * \
 					np.sqrt(Nb) / (1 + edge.stats['N'])
-					
+
 				Q = edge.stats['Q']
 
 				lg.logger_mcts.info('action: %d (%d)... N = %d, P = %f, nu = %f, adjP = %f, W = %f, Q = %f, U = %f, Q+U = %f'
@@ -93,7 +93,7 @@ class MCTS():
 
 			lg.logger_mcts.info('action with highest Q + U...%d', simulationAction)
 
-			newState, value, done = currentNode.state.takeAction(simulationAction) #the value of the newState from the POV of the new playerTurn
+			newState, value, done,_,_ = currentNode.state.takeAction(simulationAction) #the value of the newState from the POV of the new playerTurn
 			currentNode = simulationEdge.outNode
 			breadcrumbs.append(simulationEdge)
 
@@ -127,8 +127,7 @@ class MCTS():
 				, edge.stats['Q']
 				)
 
-			edge.outNode.state.render(lg.logger_mcts)
+			#edge.outNode.state.render(lg.logger_mcts)
 
 	def addNode(self, node):
 		self.tree[node.id] = node
-
