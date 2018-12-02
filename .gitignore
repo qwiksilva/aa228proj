@@ -107,4 +107,6 @@ ipynb/
 run_archive/
 code_archive/
 games/archive/
+run/
+.DS_Store
 *.pyc

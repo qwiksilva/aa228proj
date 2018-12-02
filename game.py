@@ -23,17 +23,17 @@ class Cards(Enum):
 
 class Game:
     def __init__(self):
-        #We need grid_shape
+        # We need grid_shape
         self.currentPlayer = 1
         self.gameState = self._initGameState()
         self.actionSpace = np.array(
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=np.int)
         self.name = 'exploding_kittens'
         self.state_size = len(self.gameState.binary)
-        self.name='exploding_kittens'
+        self.name = 'exploding_kittens'
         self.state_size = len(self.gameState.binary)
         self.action_size = len(self.actionSpace)
-        self.input_shape=[len(self.gameState.binary)]
+        self.input_shape = [len(self.gameState.binary)]
 
     def _initGameState(self):
         # Put all card in deck except E.K. and 2 defuse
@@ -82,7 +82,8 @@ class Game:
         self.gameState = next_state
         self.currentPlayer = next_player
         info = None
-        return ((next_state, value, done, penalizeplayer)) #Sends out next_state, penalty, whether game is done and which player to penalize
+        # Sends out next_state, penalty, whether game is done and which player to penalize
+        return ((next_state, value, done, penalizeplayer))
 
 
 class GameState():
@@ -101,7 +102,7 @@ class GameState():
         self.isEndGame = False
         self.value = self._getValue()
         self.score = self._getScore()
-        self.id=str(self.binary)
+        self.id = str(self.binary)
 
     def _allowedActions(self):
         allowedActions = [10]
@@ -134,26 +135,27 @@ class GameState():
     # End the turn by drawing a card. Don't draw if noDrawThisTurn (i.e. an attack or skip was played)
     # Returns whether the game ended due to an exploding kitten or not
     def _endTurn(self):
+        newDeck = self.deck.copy()
         if self.noDrawThisTurn:
-            return False
-        card = self.deck.pop()
+            return False, newDeck
+        card = newDeck.pop()
         if card == Cards.EXPLODING_KITTEN:
             if self.currentHand[Cards.DEFUSE.value] != 0:
                 # Has a defuse
                 self.currentHand[Cards.DEFUSE.value] -= 1
                 # Insert E.K. into deck randomly
                 if len(self.deck) == 0:
-                    self.deck.insert(0, Cards.EXPLODING_KITTEN)
+                    newDeck.insert(0, Cards.EXPLODING_KITTEN)
                 else:
                     position = random.randint(0, len(self.deck)-1)
-                    self.deck.insert(position, Cards.EXPLODING_KITTEN)
+                    newDeck.insert(position, Cards.EXPLODING_KITTEN)
             else:
                 # EndGame
-                return True
+                return True, newDeck
         else:
             self.currentHand[card.value] += 1
 
-        return False
+        return False, newDeck
 
     def _getValue(self):
         # This is the value of the state for the current player
@@ -172,10 +174,18 @@ class GameState():
         # for it again here.
 
         card = Cards(action)
+
+        # Due to the way the MCTS algorithm is written, a state needs to be static
+        # So only update newState, not the current state by making a copy of the current state
+        # A copy of the new deck is returned by endTurn() below
+        newDiscard = self.discard.copy()
+        newCurrentHand = self.currentHand.copy()
+        newOpposingHand = self.opposingHand.copy()
+
         # Take the card out of the hand
         if card != Cards.NULL:
-            self.currentHand[action] -= 1
-            self.discard.append(card)
+            newCurrentHand[action] -= 1
+            newDiscard.append(card)
 
         if card == Cards.ATTACK:
             self.noDrawThisTurn = True
@@ -183,17 +193,16 @@ class GameState():
             self.noDrawThisTurn = True
         elif card == Cards.SHUFFLE:
             random.shuffle(self.deck)
-        elif (card == Cards.FAVOR) or (card == Cards.CAT1) or (card == Cards.CAT2)or (card == Cards.CAT3) or (card == Cards.CAT4) or (card == Cards.CAT5):
+        elif (card == Cards.FAVOR) or (card == Cards.CAT1) or (card == Cards.CAT2) or (card == Cards.CAT3) or (card == Cards.CAT4) or (card == Cards.CAT5):
 
             # Take 2 cards from hand if a cat card was played
             if card != Cards.FAVOR:
-                self.currentHand[action] -= 1
-                self.discard.append(card)
+                newCurrentHand[action] -= 1
+                newDiscard.append(card)
 
-            # Acts like FAVOUR
-            self.currentHand[action]
+            newCurrentHand[action]
             validActions = []
-            for cardType, numCards in enumerate(self.opposingHand):
+            for cardType, numCards in enumerate(newOpposingHand):
                 if numCards > 0:
                     validActions.append(cardType)
 
@@ -201,31 +210,43 @@ class GameState():
                 action = random.randint(0, len(validActions)-1)
                 chosenCard = validActions[action]
 
-                self.currentHand[chosenCard] += 1
-                self.opposingHand[chosenCard] -= 1
+                newCurrentHand[chosenCard] += 1
+                newOpposingHand[chosenCard] -= 1
 
         # Done taking actions, end turn by drawing a card and checking if the game ends
-        self.isEndGame = self._endTurn()
+        self.isEndGame, newDeck = self._endTurn()
 
         if self.lastPlayedCard == Cards.ATTACK:
             # Set the next players turn equal to the current players turn
-            currentHand = self.currentHand
-            opposingHand = self.opposingHand
             nextPlayer = self.currentPlayer
         else:
-            currentHand = self.opposingHand
-            opposingHand = self.currentHand
             nextPlayer = -self.currentPlayer
 
-        if self.currentPlayer==1:
-            newState = GameState(self.deck, currentHand,opposingHand, self.discard, card, nextPlayer)# The game states reverse every time
+        # if self.lastPlayedCard == Cards.ATTACK:
+        #     # If the last card played was an attack, the next player is the same as the current player
+        #     # Otherwise the state reverses
+        #     nextPlayer = self.currentPlayer
+        #     newState = GameState(newDeck, newCurrentHand,
+        #                          newOpposingHand, newDiscard, card, nextPlayer)
+        # else:
+        #     nextPlayer = -self.currentPlayer
+        #     newState = GameState(newDeck, newOpposingHand,
+        #                          newCurrentHand, newDiscard, card, nextPlayer)
+
+        # ???? Shouldn't the state reverse based on whether an attack card was played last?
+        if self.currentPlayer == 1:
+            # The game states reverse every time
+            newState = GameState(newDeck, newCurrentHand,
+                                 newOpposingHand, newDiscard, card, nextPlayer)
         else:
-            newState = GameState(self.deck, opposingHand,currentHand, self.discard, card, nextPlayer)
+            newState = GameState(newDeck, newOpposingHand,
+                                 newCurrentHand, newDiscard, card, nextPlayer)
         value = 0
         done = 0
         if self.isEndGame == True:
             value = -1
             done = 1
+
         return (newState, value, done, self.currentPlayer, nextPlayer)
 
 
