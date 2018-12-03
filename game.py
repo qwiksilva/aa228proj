@@ -85,6 +85,13 @@ class Game:
         # Sends out next_state, penalty, whether game is done and which player to penalize
         return ((next_state, value, done, penalizeplayer))
 
+    def identities():### ???? Ryan please proof read
+        identities = [(state,actionValues)]
+        opposingHand = state.currentHand
+        currentHand = state.opposingHand
+        stateopp=GameState(state.deck, currentHand, opposingHand, state.discard, state.lastPlayedCard, state.currentPlayer)
+        identities.append((stateopp,actionValues))
+
 
 class GameState():
     def __init__(self, deck, currentHand, opposingHand, discard, lastPlayedCard, currentPlayer):

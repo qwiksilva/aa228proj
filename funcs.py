@@ -97,6 +97,7 @@ def playMatches(player1, player2, EPISODES, logger, turns_until_tau0, memory=Non
 
             if memory != None:
                 # Commit the move to memory
+                # ????????? What does identities exactly do???
                 memory.commit_stmemory(env.identities, state, pi)
 
             logger.info('action: %d', action)
