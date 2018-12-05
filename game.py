@@ -112,7 +112,7 @@ class GameState():
         self.isEndGame = False
         self.value = self._getValue()
         self.score = self._getScore()
-        self.id = str(self.binary)
+        self.id = self._convertStateToId()
 
     def _allowedActions(self):
         allowedActions = [10]
@@ -167,9 +167,12 @@ class GameState():
         return False, newDeck, newCurrentHand
 
     def _convertStateToId(self):
-        position = self._binary()
+        state = self.deck.copy()
+        state.append(self.discard.copy())
+        state.append(self.currentHand.copy())
+        state.append(self.opposingHand.copy())
 
-        id = ''.join(map(str, position))
+        id = ''.join(map(str, state))
 
         return id
 
@@ -188,9 +191,6 @@ class GameState():
         # I'm unsure if the allowedActions() function completely eliminates actions. If it does
         # then the self.currentHand[action]>0 case is covered, if not then we need to check
         # for it again here.
-
-        if len(self.deck) == 0:
-            return (self, -1, 1, self.currentPlayer, self.currentPlayer)
 
         card = Cards(action)
 
@@ -233,7 +233,7 @@ class GameState():
                 newOpposingHand[chosenCard] -= 1
 
         # Done taking actions, end turn by drawing a card and checking if the game ends
-        self.isEndGame, newDeck, newCurrentHand = self._endTurn(
+        isEndGame, newDeck, newCurrentHand = self._endTurn(
             newDeck, newCurrentHand, noDrawThisTurn)
 
         if self.lastPlayedCard == Cards.ATTACK:
@@ -263,7 +263,8 @@ class GameState():
         #                          newCurrentHand, newDiscard, card, nextPlayer)
         value = 0
         done = 0
-        if self.isEndGame == True:
+        newState.isEndGame = isEndGame
+        if isEndGame == True:
             value = -1
             done = 1
         return (newState, value, done, self.currentPlayer, nextPlayer)

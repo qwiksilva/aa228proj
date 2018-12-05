@@ -103,6 +103,7 @@ class MCTS():
             currentNode = simulationEdge.outNode
             breadcrumbs.append(simulationEdge)
 
+            done = 1 if currentNode.state.isEndGame else 0
         # lg.logger_mcts.info('DONE...%d', done)
 
         return currentNode, value, done, breadcrumbs
