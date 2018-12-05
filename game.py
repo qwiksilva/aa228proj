@@ -106,10 +106,10 @@ class GameState():
         self.currentPlayer = currentPlayer
         self.playerTurn = currentPlayer
         self.noDrawThisTurn = False
+        self.isEndGame = False
         self.binary = self._binary()
         self.id = self._convertStateToId()
         self.allowedActions = self._allowedActions()
-        self.isEndGame = False
         self.value = self._getValue()
         self.score = self._getScore()
         self.id = self._convertStateToId()
@@ -268,6 +268,20 @@ class GameState():
             value = -1
             done = 1
         return (newState, value, done, self.currentPlayer, nextPlayer)
+
+    def T(self, action, newState):
+        # state: [currentHand, lastPlayedCard, cardsInDeck]
+        # newState: [opposingHand, card, cardsInDeck-1]
+        card = Cards(action)
+        if card != Cards.NULL:
+            cardDrawn = self.deck[-1]
+            count = self.deck.count(cardDrawn)
+            transition_prob = float(count) / len(self.deck)
+        else:
+            transition_prob = 1.0
+
+        # transition_probability = 1.0 / NUM_CARDS
+        return transition_probability
 
 
 '''

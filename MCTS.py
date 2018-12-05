@@ -23,10 +23,10 @@ class Node():
 
 class Edge():
 
-    def __init__(self, inNode, outNode, prior, action):
-        self.id = inNode.state.id + '|' + outNode.state.id
+    def __init__(self, inNode, prior, action):
+        self.id = inNode.state.id + '|' + str(action)
         self.inNode = inNode
-        self.outNode = outNode
+        self.outNodes = []
         self.playerTurn = inNode.state.playerTurn
         self.action = action
 
@@ -86,25 +86,36 @@ class MCTS():
 
                 Q = edge.stats['Q']
 
-                # lg.logger_mcts.info('action: %d (%d)... N = %d, P = %f, nu = %f, adjP = %f, W = %f, Q = %f, U = %f, Q+U = %f', action, action % 7, edge.stats['N'], np.round(
-                #     edge.stats['P'], 6), np.round(nu[idx], 6), ((1-epsilon) * edge.stats['P'] + epsilon * nu[idx]), np.round(edge.stats['W'], 6), np.round(Q, 6), np.round(U, 6), np.round(Q+U, 6))
+                lg.logger_mcts.info('action: %d (%d)... N = %d, P = %f, nu = %f, adjP = %f, W = %f, Q = %f, U = %f, Q+U = %f', action, action % 7, edge.stats['N'], np.round(
+                    edge.stats['P'], 6), np.round(nu[idx], 6), ((1-epsilon) * edge.stats['P'] + epsilon * nu[idx]), np.round(edge.stats['W'], 6), np.round(Q, 6), np.round(U, 6), np.round(Q+U, 6))
 
                 if Q + U > maxQU:
                     maxQU = Q + U
                     simulationAction = action
                     simulationEdge = edge
 
-            # lg.logger_mcts.info(
-            #     'action with highest Q + U...%d', simulationAction)
+            lg.logger_mcts.info(
+                'action with highest Q + U...%d', simulationAction)
 
             # the value of the newState from the POV of the new playerTurn
             newState, value, done, _, _ = currentNode.state.takeAction(
                 simulationAction)
-            currentNode = simulationEdge.outNode
+
+            if newState.id not in self.tree:
+                newNode = Node(newState)
+                self.addNode(newNode)
+            else:
+                newNode = self.tree[newState.id]
+
+            # Possibly don't even need this
+            if newNode not in simulationEdge.outNodes:
+                simulationEdge.outNodes.append(newNode)
+
+            currentNode = newNode
             breadcrumbs.append(simulationEdge)
 
             done = 1 if currentNode.state.isEndGame else 0
-        # lg.logger_mcts.info('DONE...%d', done)
+        lg.logger_mcts.info('DONE...%d', done)
 
         return currentNode, value, done, breadcrumbs
 
