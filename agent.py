@@ -117,9 +117,13 @@ class Agent():
         mask[allowedActions] = False
         logits[mask] = -100
 
-        # SOFTMAX
-        odds = np.exp(logits)
-        probs = odds / np.sum(odds)  # put this just before the for?
+        # SOFTMAX NORMALIZED
+        def softmax_normalize(x):
+            b = x.max()
+            y = np.exp(x - b)
+            return y / y.sum()
+
+        probs = softmax_normalize(logits)  # put this just before the for?
 
         return ((value, probs, allowedActions))
 

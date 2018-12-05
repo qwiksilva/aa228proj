@@ -108,11 +108,10 @@ class GameState():
         self.noDrawThisTurn = False
         self.isEndGame = False
         self.binary = self._binary()
-        self.id = self._convertStateToId()
+        self.id = str(self.binary) #self._convertStateToId()
         self.allowedActions = self._allowedActions()
         self.value = self._getValue()
         self.score = self._getScore()
-        self.id = self._convertStateToId()
 
     def _allowedActions(self):
         allowedActions = [10]
@@ -281,7 +280,7 @@ class GameState():
             transition_prob = 1.0
 
         # transition_probability = 1.0 / NUM_CARDS
-        return transition_probability
+        return transition_prob
 
 
 '''
