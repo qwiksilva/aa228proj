@@ -107,8 +107,8 @@ class GameState():
         self.playerTurn = currentPlayer
         self.noDrawThisTurn = False
         self.isEndGame = False
-        self.binary = self._binary()
-        self.id = str(self.binary) #self._convertStateToId()
+        self.binary = np.array(self._binary())
+        self.id = self._convertStateToId()
         self.allowedActions = self._allowedActions()
         self.value = self._getValue()
         self.score = self._getScore()
@@ -139,7 +139,7 @@ class GameState():
         state = self.currentHand.copy()
         state.append(lastPlayedValue)
         state.append(len(self.deck))
-        return np.array(state)
+        return state
 
     # End the turn by drawing a card. Don't draw if noDrawThisTurn (i.e. an attack or skip was played)
     # Returns whether the game ended due to an exploding kitten or not
@@ -164,6 +164,15 @@ class GameState():
             newCurrentHand[card.value] += 1
 
         return False, newDeck, newCurrentHand
+
+    # def _convertStateToId(self):
+    #     state = self._binary()
+    #     done = 1 if self.isEndGame else 0
+    #     state.append(done)
+
+    #     id = ''.join(map(str, state))
+
+    #     return id
 
     def _convertStateToId(self):
         state = self.deck.copy()
@@ -263,7 +272,7 @@ class GameState():
         value = 0
         done = 0
         newState.isEndGame = isEndGame
-        if isEndGame == True:
+        if newState.isEndGame == True:
             value = -1
             done = 1
         return (newState, value, done, self.currentPlayer, nextPlayer)

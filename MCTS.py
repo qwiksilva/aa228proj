@@ -51,7 +51,7 @@ class MCTS():
 
     def moveToLeaf(self):
 
-        lg.logger_mcts.info('------MOVING TO LEAF------')
+        # lg.logger_mcts.info('------MOVING TO LEAF------')
 
         breadcrumbs = []
         currentNode = self.root
@@ -61,8 +61,8 @@ class MCTS():
 
         while not currentNode.isLeaf():
 
-            lg.logger_mcts.info('PLAYER TURN...%d',
-                                currentNode.state.playerTurn)
+            # lg.logger_mcts.info('PLAYER TURN...%d',
+            #                     currentNode.state.playerTurn)
 
             maxQU = -99999
 
@@ -86,8 +86,8 @@ class MCTS():
 
                 Q = edge.stats['Q']
 
-                lg.logger_mcts.info('action: %d (%d)... N = %d, P = %f, nu = %f, adjP = %f, W = %f, Q = %f, U = %f, Q+U = %f', action, action % 7, edge.stats['N'], np.round(
-                    edge.stats['P'], 6), np.round(nu[idx], 6), ((1-epsilon) * edge.stats['P'] + epsilon * nu[idx]), np.round(edge.stats['W'], 6), np.round(Q, 6), np.round(U, 6), np.round(Q+U, 6))
+                # lg.logger_mcts.info('action: %d (%d)... N = %d, P = %f, nu = %f, adjP = %f, W = %f, Q = %f, U = %f, Q+U = %f', action, action % 7, edge.stats['N'], np.round(
+                #     edge.stats['P'], 6), np.round(nu[idx], 6), ((1-epsilon) * edge.stats['P'] + epsilon * nu[idx]), np.round(edge.stats['W'], 6), np.round(Q, 6), np.round(U, 6), np.round(Q+U, 6))
 
                 # print('action: %d (%d)... N = %d, P = %f, nu = %f, adjP = %f, W = %f, Q = %f, U = %f, Q+U = %f', action, action % 7, edge.stats['N'], np.round(
                 #     edge.stats['P'], 6), np.round(nu[idx], 6), ((1-epsilon) * edge.stats['P'] + epsilon * nu[idx]), np.round(edge.stats['W'], 6), np.round(Q, 6), np.round(U, 6), np.round(Q+U, 6))
@@ -97,9 +97,10 @@ class MCTS():
                     simulationAction = action
                     simulationEdge = edge
 
-            lg.logger_mcts.info(
-                'action with highest Q + U...%d', simulationAction)
-
+            # lg.logger_mcts.info(
+            #     'action with highest Q + U...%d', simulationAction)
+            # lg.logger_mcts.info(
+            #     'current state/id...%s', currentNode.state.id)
             # the value of the newState from the POV of the new playerTurn
             newState, value, done, _, _ = currentNode.state.takeAction(
                 simulationAction)
@@ -114,15 +115,24 @@ class MCTS():
             # if newNode not in simulationEdge.outNodes:
             #     simulationEdge.outNodes.append(newNode)
 
+            # endGame = 1 if newNode.state.isEndGame else 0
+            # if done != endGame:
+            #     print("done", done, "newNode.state.isEndGame",
+            #           newNode.state.isEndGame)
+            #     inTree = newState.id not in self.tree
+            #     print("inTree:", inTree)
+            #     print("newState id", newState.id)
+            #     print("newNode id", newNode.state.id)
+
             currentNode = newNode
             breadcrumbs.append(simulationEdge)
 
-        lg.logger_mcts.info('DONE...%d', done)
+        # lg.logger_mcts.info('DONE...%d', done)
 
         return currentNode, value, done, breadcrumbs
 
     def backFill(self, leaf, value, breadcrumbs):
-        lg.logger_mcts.info('------DOING BACKFILL------')
+        # lg.logger_mcts.info('------DOING BACKFILL------')
 
         currentPlayer = leaf.state.playerTurn
 
@@ -137,8 +147,8 @@ class MCTS():
             edge.stats['W'] = edge.stats['W'] + value * direction
             edge.stats['Q'] = edge.stats['W'] / edge.stats['N']
 
-            lg.logger_mcts.info('updating edge with value %f for player %d... N = %d, W = %f, Q = %f', value * direction, playerTurn, edge.stats['N'], edge.stats['W'], edge.stats['Q']
-                                )
+            # lg.logger_mcts.info('updating edge with value %f for player %d... N = %d, W = %f, Q = %f', value * direction, playerTurn, edge.stats['N'], edge.stats['W'], edge.stats['Q']
+            #                     )
 
             # edge.outNode.state.render(lg.logger_mcts)
 

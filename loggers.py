@@ -6,10 +6,10 @@ from settings import run_folder
 # WARNING: the mcts log file gets big quite quickly
 
 LOGGER_DISABLED = {
-    'main': True, 'memory': True, 'tourney': True, 'mcts': False, 'model': True}
+    'main': True, 'memory': True, 'tourney': True, 'mcts': True, 'model': True}
 
 
-logger_mcts = setup_logger('logger_mcts', run_folder + 'logs/logger_mcts.log')
+logger_mcts = setup_logger('logger_mcts', run_folder + 'logs/logger_mcts6.log')
 logger_mcts.disabled = LOGGER_DISABLED['mcts']
 
 logger_main = setup_logger('logger_main', run_folder + 'logs/logger_main.log')
