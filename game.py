@@ -87,11 +87,11 @@ class Game:
 
     def identities(self, state, actionValues):  # ???? Ryan please proof read
         identities = [(state, actionValues)]
-        opposingHand = state.currentHand
-        currentHand = state.opposingHand
-        stateopp = GameState(state.deck, currentHand, opposingHand,
-                             state.discard, state.lastPlayedCard, state.currentPlayer)
-        identities.append((stateopp, actionValues))
+        # opposingHand = state.currentHand
+        # currentHand = state.opposingHand
+        # stateopp = GameState(state.deck, currentHand, opposingHand,
+        #                      state.discard, state.lastPlayedCard, state.currentPlayer)
+        # identities.append((stateopp, actionValues))
         return identities
 
 

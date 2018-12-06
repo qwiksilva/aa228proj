@@ -78,9 +78,9 @@ class Agent():
 
         # run the simulation
         for sim in range(self.MCTSsimulations):
-            lg.logger_mcts.info('***************************')
-            lg.logger_mcts.info('****** SIMULATION %d ******', sim + 1)
-            lg.logger_mcts.info('***************************')
+            # lg.logger_mcts.info('***************************')
+            # lg.logger_mcts.info('****** SIMULATION %d ******', sim + 1)
+            # lg.logger_mcts.info('***************************')
             self.simulate()
 
         # get action values
@@ -93,10 +93,10 @@ class Agent():
 
         NN_value = -self.get_preds(nextState)[0]
 
-        lg.logger_mcts.info('ACTION VALUES...%s', pi)
-        lg.logger_mcts.info('CHOSEN ACTION...%d', action)
-        lg.logger_mcts.info('MCTS PERCEIVED VALUE...%f', value)
-        lg.logger_mcts.info('NN PERCEIVED VALUE...%f', NN_value)
+        # lg.logger_mcts.info('ACTION VALUES...%s', pi)
+        # lg.logger_mcts.info('CHOSEN ACTION...%d', action)
+        # lg.logger_mcts.info('MCTS PERCEIVED VALUE...%f', value)
+        # lg.logger_mcts.info('NN PERCEIVED VALUE...%f', NN_value)
 
         return (action, pi, value, NN_value)
 
@@ -194,7 +194,6 @@ class Agent():
                 [self.model.convertToModelInput(row['state']) for row in minibatch])
             training_targets = {'value_head': np.array(
                 [row['value'] for row in minibatch]), 'policy_head': np.array([row['AV'] for row in minibatch])}
-
             fit = self.model.fit(training_states, training_targets,
                                  epochs=config.EPOCHS, verbose=1, validation_split=0, batch_size=32)
             lg.logger_mcts.info('NEW LOSS %s', fit.history)
@@ -218,7 +217,7 @@ class Agent():
         time.sleep(1.0)
 
         print('\n')
-        # self.model.printWeightAverages()
+        self.model.printWeightAverages()
 
     def predict(self, inputToModel):
         preds = self.model.predict(inputToModel)
